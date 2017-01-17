@@ -5,10 +5,10 @@ var mySystem
 function setup() {
     myCanvas = new Canvas(1000, 700)
     myCanvas.create()
-    myCircle = new Circle(myCanvas.center)
+    myCircle = new Circle(myCanvas)
     mySystem = new System(new CollisionDetector(myCanvas, myCircle), myCircle)
-    myCircle.velocity.yRate = 10
-    myCircle.velocity.xRate = 5
+    myCircle.velocity.yRate = 25
+    myCircle.velocity.xRate = 25
 }
 
 function draw() {
@@ -28,18 +28,21 @@ class System {
                 this._circle.velocity.xRate *= -1
             }
 
-            if(this._collisionDetector.leftCollision){
+            if (this._collisionDetector.leftCollision) {
                 this._circle.velocity.xRate *= -1
             }
 
-            if(this._collisionDetector.topCollision){
-              this._circle.velocity.yRate *= -1
+            if (this._collisionDetector.topCollision) {
+                this._circle.velocity.yRate *= -1
             }
 
-            if(this._collisionDetector.bottomCollision){
-              this._circle.velocity.yRate *= -1
+            if (this._collisionDetector.bottomCollision) {
+                this._circle.velocity.yRate *= -1
             }
+
+            this._circle.makeBigger()
         }
+
 
         this._circle.render()
     }
@@ -151,11 +154,12 @@ class Velocity {
 }
 
 class Circle {
-    constructor(coordinate) {
-        this._coordinate = coordinate
+    constructor(canvas) {
+        this._coordinate = canvas.center
         this._velocity = new Velocity(0, 0)
         this._height = 50
         this._width = 50
+        this._canvas = canvas
     }
 
     makeBigger() {
@@ -195,5 +199,29 @@ class Circle {
     _updatePosition() {
         this._coordinate.x += this._velocity.xRate
         this._coordinate.y += this._velocity.yRate
+
+        if (this.right > this._canvas.right) {
+            this._coordinate.x = this._canvas.right - this._width / 2
+        }
+
+        if (this.left < this._canvas.left) {
+            this._coordinate.x = this._canvas.left + this._width / 2
+        }
+
+        if (this.top > this._canvas.top) {
+            this._coordinate.y = this._canvas.top - this._height / 2
+        }
+
+        if (this.bottom < this._canvas.bottom) {
+            this._coordinate.y = this._canvas.bottom + this._height / 2
+        }
+
+        if (this._height > this._canvas.top) {
+            this._height = this._canvas.top
+        }
+
+        if (this._width > this._canvas.right) {
+            this._width = this._canvas.right
+        }
     }
 }
