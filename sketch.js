@@ -1,14 +1,10 @@
-var myCanvas
-var myCircle
 var mySystem
+var myCanvas
 
 function setup() {
-    myCanvas = new Canvas(1000, 700)
+    myCanvas = new Canvas(windowWidth, windowHeight)
+    mySystem = new System(myCanvas)
     myCanvas.create()
-    myCircle = new Circle(myCanvas)
-    mySystem = new System(new CollisionDetector(myCanvas, myCircle), myCircle)
-    myCircle.velocity.yRate = 25
-    myCircle.velocity.xRate = 25
 }
 
 function draw() {
@@ -16,13 +12,32 @@ function draw() {
     mySystem.render()
 }
 
+function windowResized() {
+    myCanvas.resize(windowWidth, windowHeight);
+}
+
 class System {
+    constructor(canvas) {
+        this._circle = new Circle(canvas)
+        this._collisionDetector = new CollisionDetector(canvas, this._circle)
+        this._circle.velocity.yRate = 25
+        this._circle.velocity.xRate = 25
+        this._boundaryRule = new BoundaryRule(this._collisionDetector, this._circle)
+    }
+
+    render() {
+        this._boundaryRule.execute()
+        this._circle.render()
+    }
+}
+
+class BoundaryRule {
     constructor(collisionDetector, circle) {
         this._collisionDetector = collisionDetector
         this._circle = circle
     }
 
-    render() {
+    execute() {
         if (this._collisionDetector.anyCollision) {
             if (this._collisionDetector.rightCollision) {
                 this._circle.velocity.xRate *= -1
@@ -42,12 +57,8 @@ class System {
 
             this._circle.makeBigger()
         }
-
-
-        this._circle.render()
     }
 }
-
 
 class CollisionDetector {
     constructor(canvas, circle) {
@@ -85,6 +96,16 @@ class Canvas {
 
     create() {
         createCanvas(this._x, this._y)
+    }
+
+    GetRandomCoordinate() {
+        return new Coordinate(random(this.left, this.right), random(this.bottom, this.top))
+    }
+
+    resize(windowWidth, windowHeight) {
+        this._x = windowWidth
+        this._y = windowHeight
+        resizeCanvas(windowWidth, windowHeight)
     }
 
     get center() {
@@ -154,8 +175,8 @@ class Velocity {
 }
 
 class Circle {
-    constructor(canvas) {
-        this._coordinate = canvas.center
+    constructor(canvas, Coordinate) {
+        this._coordinate = Coordinate == null ? canvas.center : Coordinate
         this._velocity = new Velocity(0, 0)
         this._height = 50
         this._width = 50
