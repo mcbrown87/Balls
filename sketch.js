@@ -18,16 +18,28 @@ function windowResized() {
 
 class System {
     constructor(canvas) {
-        this._circle = new Circle(canvas)
-        this._collisionDetector = new CollisionDetector(canvas, this._circle)
-        this._circle.velocity.yRate = 25
-        this._circle.velocity.xRate = 25
-        this._boundaryRule = new BoundaryRule(this._collisionDetector, this._circle)
+        this._players = []
+        for (var i = 0; i < 150; i++) {
+            this._players.push(new Circle(canvas, canvas.getRandomCoordinate()))
+        }
+
+        var rules = []
+        this._players.forEach(function(circle) {
+            rules.push(new BoundaryRule(new CollisionDetector(canvas, circle), circle))
+            rules.push(new MakeBiggerRule(new CollisionDetector(canvas, circle), circle))
+        })
+
+        this._rules = rules
     }
 
     render() {
-        this._boundaryRule.execute()
-        this._circle.render()
+        this._rules.forEach(function(rule) {
+            rule.execute()
+        })
+
+        this._players.forEach(function(player) {
+            player.render()
+        })
     }
 }
 
@@ -38,23 +50,26 @@ class BoundaryRule {
     }
 
     execute() {
+        if (this._collisionDetector.rightCollision ||
+            this._collisionDetector.leftCollision) {
+            this._circle.velocity.xRate *= -1
+        }
+
+        if (this._collisionDetector.topCollision ||
+            this._collisionDetector.bottomCollision) {
+            this._circle.velocity.yRate *= -1
+        }
+    }
+}
+
+class MakeBiggerRule {
+    constructor(collisionDetector, circle) {
+        this._collisionDetector = collisionDetector
+        this._circle = circle
+    }
+
+    execute() {
         if (this._collisionDetector.anyCollision) {
-            if (this._collisionDetector.rightCollision) {
-                this._circle.velocity.xRate *= -1
-            }
-
-            if (this._collisionDetector.leftCollision) {
-                this._circle.velocity.xRate *= -1
-            }
-
-            if (this._collisionDetector.topCollision) {
-                this._circle.velocity.yRate *= -1
-            }
-
-            if (this._collisionDetector.bottomCollision) {
-                this._circle.velocity.yRate *= -1
-            }
-
             this._circle.makeBigger()
         }
     }
@@ -98,7 +113,7 @@ class Canvas {
         createCanvas(this._x, this._y)
     }
 
-    GetRandomCoordinate() {
+    getRandomCoordinate() {
         return new Coordinate(random(this.left, this.right), random(this.bottom, this.top))
     }
 
@@ -155,6 +170,10 @@ class Velocity {
         this._yRate = yRate
     }
 
+    static createRandomVelocity() {
+        return new Velocity(random(-1, 1), random(-1, 1))
+    }
+
     clear() {
         this._xRate = 0
         this._yRate = 0
@@ -175,9 +194,9 @@ class Velocity {
 }
 
 class Circle {
-    constructor(canvas, Coordinate) {
-        this._coordinate = Coordinate == null ? canvas.center : Coordinate
-        this._velocity = new Velocity(0, 0)
+    constructor(canvas, coordinate, velocity) {
+        this._coordinate = coordinate == null ? canvas.center : coordinate
+        this._velocity = velocity == null ? Velocity.createRandomVelocity() : velocity
         this._height = 50
         this._width = 50
         this._canvas = canvas
@@ -214,6 +233,8 @@ class Circle {
 
     render() {
         this._updatePosition()
+        strokeWeight(2);
+        stroke(51);
         ellipse(this._coordinate.x, this._coordinate.y, this._width, this._height)
     }
 
