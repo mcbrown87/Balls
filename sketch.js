@@ -9,6 +9,11 @@ function setup() {
 
 function draw() {
     background(255, 0, 200);
+
+    if(keyIsDown(ENTER)){
+      mySystem.players[0].powerup()
+    }
+
     mySystem.render()
 }
 
@@ -19,17 +24,23 @@ function windowResized() {
 class System {
     constructor(canvas) {
         this._players = []
-        for (var i = 0; i < 150; i++) {
-            this._players.push(new Circle(canvas, canvas.getRandomCoordinate()))
+        for (var i = 0; i < 30; i++) {
+            this._players.push(new Player(new Circle(canvas, canvas.getRandomCoordinate()), 'blah' + i))
         }
 
         var rules = []
-        this._players.forEach(function(circle) {
-            rules.push(new BoundaryRule(new CollisionDetector(canvas, circle), circle))
-            rules.push(new MakeBiggerRule(new CollisionDetector(canvas, circle), circle))
+        rules.push(new EatenRule(this._players))
+        this._players.forEach(function(player) {
+            rules.push(new BoundaryRule(new CollisionDetector(canvas, player.circle), player.circle))
+            //rules.push(new RandomizeVelocityRule(player.circle))
+            //rules.push(new MakeBiggerRule(new CollisionDetector(canvas, circle), circle))
         })
 
         this._rules = rules
+    }
+
+    get players(){
+      return this._players
     }
 
     render() {
@@ -40,6 +51,88 @@ class System {
         this._players.forEach(function(player) {
             player.render()
         })
+    }
+}
+
+class Player {
+    constructor(circle, name) {
+        this._circle = circle
+        this._name = name
+        this._dead = false
+    }
+
+    get circle() {
+        return this._circle
+    }
+
+    powerup(){
+      this.circle.makeBigger()
+    }
+
+    eat(player) {
+        this.circle.makeBigger()
+        player.kill()
+    }
+
+    kill() {
+        this._dead = true
+    }
+
+    get isDead(){
+      return this._dead
+    }
+
+    render() {
+        this.circle.render()
+        textAlign(CENTER)
+        strokeWeight(0).textSize(12);
+        text(this._name, this.circle.position.x, this.circle.position.y)
+    }
+}
+
+class RandomizeVelocityRule {
+    constructor(circle) {
+        this._circle = circle
+        this._executeCount = 0
+    }
+
+    execute() {
+        this._executeCount++
+            if (this._executeCount > 500) {
+                this._executeCount = 0
+                this._circle.velocity = Velocity.createRandomVelocity()
+            }
+    }
+}
+
+class EatenRule {
+    constructor(players) {
+        this._players = players
+    }
+
+    execute() {
+        for (var i = 0; i < this._players.length; i++) {
+            for (var k = i + 1; k < this._players.length; k++) {
+                var playerA = this._players[i]
+                var playerB = this._players[k]
+
+                var distance = playerA.circle.position.getDistance(playerB.circle.position)
+                var threshold = (playerA.circle.radius + playerB.circle.radius) * .5
+                if (distance < threshold) {
+                    if (playerA.circle.radius > playerB.circle.radius) {
+                        playerA.eat(playerB)
+                    } else if (playerB.circle.radius > playerA.circle.radius) {
+                        playerB.eat(playerA)
+                    }
+                }
+            }
+        }
+
+        for(var i=0;i<this._players.length;i++){
+          if(this._players[i].isDead){
+            this._players.splice(i, 1)
+          }
+        }
     }
 }
 
@@ -142,6 +235,14 @@ class Canvas {
     get left() {
         return 0
     }
+
+    get height(){
+      return Math.abs(this.top - this.bottom)
+    }
+
+    get width(){
+      return Math.abs(this.right - this.left)
+    }
 }
 
 class Coordinate {
@@ -162,6 +263,10 @@ class Coordinate {
     set y(y) {
         this._y = y
     }
+
+    getDistance(coordinate) {
+        return Math.sqrt(Math.pow(this.x - coordinate.x, 2) + Math.pow(this.y - coordinate.y, 2))
+    }
 }
 
 class Velocity {
@@ -171,7 +276,7 @@ class Velocity {
     }
 
     static createRandomVelocity() {
-        return new Velocity(random(-1, 1), random(-1, 1))
+        return new Velocity(random(-2, 2), random(-2, 2))
     }
 
     clear() {
@@ -197,30 +302,39 @@ class Circle {
     constructor(canvas, coordinate, velocity) {
         this._coordinate = coordinate == null ? canvas.center : coordinate
         this._velocity = velocity == null ? Velocity.createRandomVelocity() : velocity
-        this._height = 50
-        this._width = 50
+        this._diameter = 50
         this._canvas = canvas
     }
 
     makeBigger() {
-        this._height += 1
-        this._width += 1
+        this._diameter++
+        if(this._diameter > this._canvas.height){
+          this._diameter = this._canvas.height
+        }
+
+        if(this._diameter > this._canvas.width){
+          this._diameter = this._canvas.width
+        }
+    }
+
+    get position() {
+        return this._coordinate
     }
 
     get top() {
-        return this._coordinate.y + this._height / 2
+        return this._coordinate.y + this.radius
     }
 
     get bottom() {
-        return this._coordinate.y - this._height / 2
+        return this._coordinate.y - this.radius
     }
 
     get right() {
-        return this._coordinate.x + this._width / 2
+        return this._coordinate.x + this.radius
     }
 
     get left() {
-        return this._coordinate.x - this._width / 2
+        return this._coordinate.x - this.radius
     }
 
     set velocity(velocity) {
@@ -231,11 +345,15 @@ class Circle {
         return this._velocity
     }
 
+    get radius() {
+        return this._diameter / 2
+    }
+
     render() {
         this._updatePosition()
-        strokeWeight(2);
+        strokeWeight(3);
         stroke(51);
-        ellipse(this._coordinate.x, this._coordinate.y, this._width, this._height)
+        ellipse(this._coordinate.x, this._coordinate.y, this._diameter, this._diameter)
     }
 
     _updatePosition() {
@@ -243,27 +361,27 @@ class Circle {
         this._coordinate.y += this._velocity.yRate
 
         if (this.right > this._canvas.right) {
-            this._coordinate.x = this._canvas.right - this._width / 2
+            this._coordinate.x = this._canvas.right - this.radius
         }
 
         if (this.left < this._canvas.left) {
-            this._coordinate.x = this._canvas.left + this._width / 2
+            this._coordinate.x = this._canvas.left + this.radius
         }
 
         if (this.top > this._canvas.top) {
-            this._coordinate.y = this._canvas.top - this._height / 2
+            this._coordinate.y = this._canvas.top - this.radius
         }
 
         if (this.bottom < this._canvas.bottom) {
-            this._coordinate.y = this._canvas.bottom + this._height / 2
+            this._coordinate.y = this._canvas.bottom + this.radius
         }
 
         if (this._height > this._canvas.top) {
-            this._height = this._canvas.top
+            this._diameter = this._canvas.top
         }
 
         if (this._width > this._canvas.right) {
-            this._width = this._canvas.right
+            this._diameter = this._canvas.right
         }
     }
 }
