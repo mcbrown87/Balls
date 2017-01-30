@@ -10,8 +10,8 @@ function setup() {
 function draw() {
     background(255, 0, 200);
 
-    if(keyIsDown(ENTER)){
-      mySystem.players[0].powerup()
+    if (keyIsDown(ENTER)) {
+        mySystem.players[0].powerup()
     }
 
     mySystem.render()
@@ -39,8 +39,8 @@ class System {
         this._rules = rules
     }
 
-    get players(){
-      return this._players
+    get players() {
+        return this._players
     }
 
     render() {
@@ -65,8 +65,8 @@ class Player {
         return this._circle
     }
 
-    powerup(){
-      this.circle.makeBigger()
+    powerup() {
+        this.circle.makeBigger()
     }
 
     eat(player) {
@@ -78,8 +78,8 @@ class Player {
         this._dead = true
     }
 
-    get isDead(){
-      return this._dead
+    get isDead() {
+        return this._dead
     }
 
     render() {
@@ -128,10 +128,10 @@ class EatenRule {
             }
         }
 
-        for(var i=0;i<this._players.length;i++){
-          if(this._players[i].isDead){
-            this._players.splice(i, 1)
-          }
+        for (var i = 0; i < this._players.length; i++) {
+            if (this._players[i].isDead) {
+                this._players.splice(i, 1)
+            }
         }
     }
 }
@@ -236,12 +236,12 @@ class Canvas {
         return 0
     }
 
-    get height(){
-      return Math.abs(this.top - this.bottom)
+    get height() {
+        return Math.abs(this.top - this.bottom)
     }
 
-    get width(){
-      return Math.abs(this.right - this.left)
+    get width() {
+        return Math.abs(this.right - this.left)
     }
 }
 
@@ -306,14 +306,15 @@ class Circle {
         this._canvas = canvas
     }
 
-    makeBigger() {
-        this._diameter++
-        if(this._diameter > this._canvas.height){
-          this._diameter = this._canvas.height
+    makeBigger(factor) {
+        this._diameter += this._diameter * (factor == null ? .05 : factor)
+
+        if (this._diameter > this._canvas.height) {
+            this._diameter = this._canvas.height
         }
 
-        if(this._diameter > this._canvas.width){
-          this._diameter = this._canvas.width
+        if (this._diameter > this._canvas.width) {
+            this._diameter = this._canvas.width
         }
     }
 
