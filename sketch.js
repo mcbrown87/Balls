@@ -24,7 +24,7 @@ function windowResized() {
 class System {
     constructor(canvas) {
         this._players = []
-        for (var i = 0; i < 30; i++) {
+        for (var i = 0; i < 10; i++) {
             this._players.push(new Player(new Circle(canvas, canvas.getRandomCoordinate()), 'blah' + i))
         }
 
@@ -32,8 +32,7 @@ class System {
         rules.push(new EatenRule(this._players))
         this._players.forEach(function(player) {
             rules.push(new BoundaryRule(new CollisionDetector(canvas, player.circle), player.circle))
-            //rules.push(new RandomizeVelocityRule(player.circle))
-            //rules.push(new MakeBiggerRule(new CollisionDetector(canvas, circle), circle))
+            rules.push(new RandomizeVelocityRule(player.circle))
         })
 
         this._rules = rules
@@ -93,15 +92,21 @@ class Player {
 class RandomizeVelocityRule {
     constructor(circle) {
         this._circle = circle
+        this._randomFactor = this._createRandomFactor()
         this._executeCount = 0
     }
 
     execute() {
         this._executeCount++
-            if (this._executeCount > 500) {
+            if (this._executeCount > this._randomFactor) {
                 this._executeCount = 0
+                this._randomFactor = this._createRandomFactor()
                 this._circle.velocity = Velocity.createRandomVelocity()
             }
+    }
+
+    _createRandomFactor(){
+      return random(10, 500)
     }
 }
 
@@ -118,7 +123,8 @@ class EatenRule {
 
                 var distance = playerA.circle.position.getDistance(playerB.circle.position)
                 var threshold = (playerA.circle.radius + playerB.circle.radius) * .5
-                if (distance < threshold) {
+                var threshold2 = Math.abs(playerA.circle.radius - playerB.circle.radius)
+                if (distance < (threshold > threshold2 ? threshold : threshold2)) {
                     if (playerA.circle.radius > playerB.circle.radius) {
                         playerA.eat(playerB)
                     } else if (playerB.circle.radius > playerA.circle.radius) {
@@ -151,19 +157,6 @@ class BoundaryRule {
         if (this._collisionDetector.topCollision ||
             this._collisionDetector.bottomCollision) {
             this._circle.velocity.yRate *= -1
-        }
-    }
-}
-
-class MakeBiggerRule {
-    constructor(collisionDetector, circle) {
-        this._collisionDetector = collisionDetector
-        this._circle = circle
-    }
-
-    execute() {
-        if (this._collisionDetector.anyCollision) {
-            this._circle.makeBigger()
         }
     }
 }
