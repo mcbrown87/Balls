@@ -23,19 +23,8 @@ function windowResized() {
 
 class System {
     constructor(canvas) {
-        this._players = []
-        for (var i = 0; i < 10; i++) {
-            this._players.push(new Player(new Circle(canvas, canvas.getRandomCoordinate()), 'blah' + i))
-        }
-
-        var rules = []
-        rules.push(new EatenRule(this._players))
-        this._players.forEach(function(player) {
-            rules.push(new BoundaryRule(new CollisionDetector(canvas, player.circle), player.circle))
-            rules.push(new RandomizeVelocityRule(player.circle))
-        })
-
-        this._rules = rules
+        this._canvas = canvas
+        this.reset()
     }
 
     get players() {
@@ -51,6 +40,25 @@ class System {
             player.render()
         })
     }
+
+    reset() {
+        this._players = []
+        var canvas = this._canvas
+        for (var i = 0; i < 100; i++) {
+            this._players.push(new Player(new Circle(canvas, canvas.getRandomCoordinate()), 'blah' + i))
+        }
+
+        var rules = []
+        rules.push(new GameOverRule(this))
+        rules.push(new EatenRule(this._players))
+        rules.push(new RandomPowerupRule(this._players))
+        this._players.forEach(function(player) {
+            rules.push(new BoundaryRule(new CollisionDetector(canvas, player.circle), player.circle))
+            rules.push(new RandomizeVelocityRule(player.circle))
+        })
+
+        this._rules = rules
+    }
 }
 
 class Player {
@@ -58,6 +66,10 @@ class Player {
         this._circle = circle
         this._name = name
         this._dead = false
+    }
+
+    get name() {
+        return this._name
     }
 
     get circle() {
@@ -92,21 +104,13 @@ class Player {
 class RandomizeVelocityRule {
     constructor(circle) {
         this._circle = circle
-        this._randomFactor = this._createRandomFactor()
-        this._executeCount = 0
+        this._randomExecutor = new RandomExecutor(() => {
+            this._circle.velocity = Velocity.createRandomVelocity()
+        })
     }
 
     execute() {
-        this._executeCount++
-            if (this._executeCount > this._randomFactor) {
-                this._executeCount = 0
-                this._randomFactor = this._createRandomFactor()
-                this._circle.velocity = Velocity.createRandomVelocity()
-            }
-    }
-
-    _createRandomFactor(){
-      return random(10, 500)
+        this._randomExecutor.execute()
     }
 }
 
@@ -158,6 +162,54 @@ class BoundaryRule {
             this._collisionDetector.bottomCollision) {
             this._circle.velocity.yRate *= -1
         }
+    }
+}
+
+class GameOverRule {
+    constructor(system) {
+        this._system = system
+    }
+
+    execute() {
+        if (this._system.players.length == 1) {
+            console.log(this._system.players[0].name + " wins!")
+            this._system.reset()
+        }
+    }
+}
+
+class RandomPowerupRule {
+    constructor(players) {
+        this._players = players
+        this._randomExecutor = new RandomExecutor(() => {
+            this._players[Math.floor(random(0, this._players.length - 1))].powerup()
+        }, 20)
+    }
+
+    execute() {
+        this._randomExecutor.execute()
+    }
+}
+
+class RandomExecutor {
+    constructor(method, randomFactor) {
+        this._method = method
+        this._lowerBound = 10
+        this._upperBound = randomFactor == null ? 500 : randomFactor
+        this._randomFactor = this._createRandomFactor()
+        this._executeCount = 0
+    }
+    execute() {
+        this._executeCount++
+            if (this._executeCount > this._randomFactor) {
+                this._executeCount = 0
+                this._randomFactor = this._createRandomFactor()
+                this._method()
+            }
+    }
+
+    _createRandomFactor() {
+        return random(this._lowerBound, this._upperBound)
     }
 }
 
