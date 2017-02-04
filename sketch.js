@@ -44,17 +44,22 @@ class System {
     reset() {
         this._players = []
         var canvas = this._canvas
-        for (var i = 0; i < 100; i++) {
+        for (var i = 0; i < 50; i++) {
             this._players.push(new Player(new Circle(canvas, canvas.getRandomCoordinate()), 'blah' + i))
         }
 
         var rules = []
+        var eatenRule = new EatenRule(this._players)
+        eatenRule.subscribeToOnEatenEvent((player, eatenPlayer) => {
+            console.log(player.name + ' has eaten ' + eatenPlayer.name)
+        })
+        rules.push(eatenRule)
         rules.push(new GameOverRule(this))
-        rules.push(new EatenRule(this._players))
-        rules.push(new RandomPowerupRule(this._players))
         this._players.forEach(function(player) {
             rules.push(new BoundaryRule(new CollisionDetector(canvas, player.circle), player.circle))
             rules.push(new RandomizeVelocityRule(player.circle))
+            rules.push(new RandomPowerupRule(player))
+            rules.push(new RandomPowerdownRule(player))
         })
 
         this._rules = rules
@@ -80,6 +85,10 @@ class Player {
         this.circle.makeBigger()
     }
 
+    powerdown() {
+        this.circle.makeSmaller()
+    }
+
     eat(player) {
         this.circle.makeBigger()
         player.kill()
@@ -90,7 +99,7 @@ class Player {
     }
 
     get isDead() {
-        return this._dead
+        return this._dead || this.circle.radius < 0
     }
 
     render() {
@@ -117,6 +126,15 @@ class RandomizeVelocityRule {
 class EatenRule {
     constructor(players) {
         this._players = players
+        this._subscribers = []
+    }
+
+    _onEaten(player, eatenPlayer) {
+        this._subscribers.forEach((subscriber) => subscriber(player, eatenPlayer))
+    }
+
+    subscribeToOnEatenEvent(eventHandler) {
+        this._subscribers.push(eventHandler)
     }
 
     execute() {
@@ -131,8 +149,10 @@ class EatenRule {
                 if (distance < (threshold > threshold2 ? threshold : threshold2)) {
                     if (playerA.circle.radius > playerB.circle.radius) {
                         playerA.eat(playerB)
+                        this._onEaten(playerA, playerB)
                     } else if (playerB.circle.radius > playerA.circle.radius) {
                         playerB.eat(playerA)
+                        this._onEaten(playerB, playerA)
                     }
                 }
             }
@@ -179,11 +199,24 @@ class GameOverRule {
 }
 
 class RandomPowerupRule {
-    constructor(players) {
-        this._players = players
+    constructor(player) {
+        this._player = player
         this._randomExecutor = new RandomExecutor(() => {
-            this._players[Math.floor(random(0, this._players.length - 1))].powerup()
-        }, 20)
+            this._player.powerup()
+        }, 200)
+    }
+
+    execute() {
+        this._randomExecutor.execute()
+    }
+}
+
+class RandomPowerdownRule {
+    constructor(player) {
+        this._player = player
+        this._randomExecutor = new RandomExecutor(() => {
+            this._player.powerdown()
+        })
     }
 
     execute() {
@@ -360,6 +393,14 @@ class Circle {
 
         if (this._diameter > this._canvas.width) {
             this._diameter = this._canvas.width
+        }
+    }
+
+    makeSmaller(factor) {
+        this._diameter -= this._diameter * (factor == null ? .05 : factor)
+
+        if (this._diameter < 0) {
+            this._diameter = 0
         }
     }
 
