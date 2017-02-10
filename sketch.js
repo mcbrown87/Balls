@@ -41,12 +41,51 @@ class System {
         })
     }
 
+    _generatePlayers() {
+        let players = []
+
+        players.push(new Player(new Circle(this._canvas, this._canvas.getRandomCoordinate()),
+            'TFT',
+            new JenkinsJob('http://sparhawkbuild:8080/view/6.1%20Delivery%20Pipeline/job/6_1_cd_scoped_tft')))
+
+        players.push(new Player(new Circle(this._canvas, this._canvas.getRandomCoordinate()),
+            'PHILO',
+            new JenkinsJob('http://sparhawkbuild:8080/view/6.1%20Delivery%20Pipeline/job/6_1_cd_scoped_philo')))
+
+        players.push(new Player(new Circle(this._canvas, this._canvas.getRandomCoordinate()),
+            'TSN',
+            new JenkinsJob('http://sparhawkbuild:8080/view/6.1%20Delivery%20Pipeline/job/6_1_cd_scoped_tsn')))
+
+        players.push(new Player(new Circle(this._canvas, this._canvas.getRandomCoordinate()),
+            'SWFL',
+            new JenkinsJob('http://sparhawkbuild:8080/view/6.1%20Delivery%20Pipeline/job/6_1_cd_scoped_swfl')))
+
+        players.push(new Player(new Circle(this._canvas, this._canvas.getRandomCoordinate()),
+            'SPARHAWK',
+            new JenkinsJob('http://sparhawkbuild:8080/view/6.1%20Delivery%20Pipeline/job/6_1_cd_scoped_sparhawk')))
+
+        players.push(new Player(new Circle(this._canvas, this._canvas.getRandomCoordinate()),
+            'SF',
+            new JenkinsJob('http://sparhawkbuild:8080/view/6.1%20Delivery%20Pipeline/job/6_1_cd_scoped_sf')))
+
+        players.push(new Player(new Circle(this._canvas, this._canvas.getRandomCoordinate()),
+            'INF',
+            new JenkinsJob('http://sparhawkbuild:8080/view/6.1%20Delivery%20Pipeline/job/6_1_cd_scoped_inf')))
+
+        players.push(new Player(new Circle(this._canvas, this._canvas.getRandomCoordinate()),
+            'BP',
+            new JenkinsJob('http://sparhawkbuild:8080/view/6.1%20Delivery%20Pipeline/job/6_1_cd_scoped_bp')))
+
+        players.push(new Player(new Circle(this._canvas, this._canvas.getRandomCoordinate()),
+            'ACME',
+            new JenkinsJob('http://sparhawkbuild:8080/view/6.1%20Delivery%20Pipeline/job/6_1_cd_scoped_acme')))
+
+        return players
+    }
+
     reset() {
-        this._players = []
+        this._players = this._generatePlayers()
         var canvas = this._canvas
-        for (var i = 0; i < 50; i++) {
-            this._players.push(new Player(new Circle(canvas, canvas.getRandomCoordinate()), 'blah' + i))
-        }
 
         var rules = []
         var eatenRule = new EatenRule(this._players)
@@ -58,8 +97,6 @@ class System {
         this._players.forEach(function(player) {
             rules.push(new BoundaryRule(new CollisionDetector(canvas, player.circle), player.circle))
             rules.push(new RandomizeVelocityRule(player.circle))
-            rules.push(new RandomPowerupRule(player))
-            rules.push(new RandomPowerdownRule(player))
         })
 
         this._rules = rules
@@ -67,9 +104,14 @@ class System {
 }
 
 class Player {
-    constructor(circle, name) {
+    constructor(circle, name, jenkinsJob) {
         this._circle = circle
         this._name = name
+        this._jenkinsJob = jenkinsJob
+        this._jenkinsJob.score.then((buildScore) => this.score = buildScore)
+        setInterval(() => {
+            this._jenkinsJob.score.then((buildScore) => this.score = buildScore)
+        }, 3000)
         this._dead = false
     }
 
@@ -81,6 +123,15 @@ class Player {
         return this._circle
     }
 
+    get score() {
+        return this._score
+    }
+
+    set score(score) {
+        this._score = score
+        this.circle.diameter = map(this._score, 0, 100, 100, 110)
+    }
+
     powerup() {
         this.circle.makeBigger()
     }
@@ -90,7 +141,6 @@ class Player {
     }
 
     eat(player) {
-        this.circle.makeBigger()
         player.kill()
     }
 
@@ -106,7 +156,7 @@ class Player {
         this.circle.render()
         textAlign(CENTER)
         strokeWeight(0).textSize(12);
-        text(this._name, this.circle.position.x, this.circle.position.y)
+        text(this._name + '\r\n' + this._score, this.circle.position.x, this.circle.position.y)
     }
 }
 
@@ -144,9 +194,8 @@ class EatenRule {
                 var playerB = this._players[k]
 
                 var distance = playerA.circle.position.getDistance(playerB.circle.position)
-                var threshold = (playerA.circle.radius + playerB.circle.radius) * .5
-                var threshold2 = Math.abs(playerA.circle.radius - playerB.circle.radius)
-                if (distance < (threshold > threshold2 ? threshold : threshold2)) {
+                var threshold = Math.abs(playerA.circle.radius - playerB.circle.radius)
+                if (distance < threshold) {
                     if (playerA.circle.radius > playerB.circle.radius) {
                         playerA.eat(playerB)
                         this._onEaten(playerA, playerB)
@@ -380,12 +429,24 @@ class Circle {
     constructor(canvas, coordinate, velocity) {
         this._coordinate = coordinate == null ? canvas.center : coordinate
         this._velocity = velocity == null ? Velocity.createRandomVelocity() : velocity
-        this._diameter = 50
+        this._diameter = 100
         this._canvas = canvas
     }
 
     makeBigger(factor) {
-        this._diameter += this._diameter * (factor == null ? .05 : factor)
+        this.diameter += this._diameter * (factor == null ? .05 : factor)
+    }
+
+    makeSmaller(factor) {
+        this.diameter -= this._diameter * (factor == null ? .05 : factor)
+    }
+
+    get diameter() {
+        return this._diameter
+    }
+
+    set diameter(diameter) {
+        this._diameter = diameter
 
         if (this._diameter > this._canvas.height) {
             this._diameter = this._canvas.height
@@ -394,10 +455,6 @@ class Circle {
         if (this._diameter > this._canvas.width) {
             this._diameter = this._canvas.width
         }
-    }
-
-    makeSmaller(factor) {
-        this._diameter -= this._diameter * (factor == null ? .05 : factor)
 
         if (this._diameter < 0) {
             this._diameter = 0
