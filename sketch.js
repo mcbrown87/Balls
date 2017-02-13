@@ -108,10 +108,23 @@ class Player {
         this._circle = circle
         this._name = name
         this._jenkinsJob = jenkinsJob
-        this._jenkinsJob.score.then((buildScore) => this.score = buildScore)
+        this._totalTestCount = 0
+        this._buildScore = 0
+        this._jenkinsJob.score.then((buildScore) => this._buildScore = buildScore)
+        this._jenkinsJob.latestCompletedBuild.then((latestCompletedBuild)=>{
+            latestCompletedBuild.testReport.totalTestCount.then((totalTestCount)=>{
+                this._totalTestCount = totalTestCount
+            })
+        })
+
         setInterval(() => {
-            this._jenkinsJob.score.then((buildScore) => this.score = buildScore)
-        }, 3000)
+            this._jenkinsJob.score.then((buildScore) => this._buildScore = buildScore)
+            this._jenkinsJob.latestCompletedBuild.then((latestCompletedBuild)=>{
+                latestCompletedBuild.testReport.totalTestCount.then((totalTestCount)=>{
+                    this._totalTestCount = totalTestCount
+                })
+            })
+        }, 60000)
         this._dead = false
     }
 
@@ -124,12 +137,7 @@ class Player {
     }
 
     get score() {
-        return this._score
-    }
-
-    set score(score) {
-        this._score = score
-        this.circle.diameter = map(this._score, 0, 100, 0, 150)
+        return this._buildScore + this._totalTestCount
     }
 
     powerup() {
@@ -153,10 +161,11 @@ class Player {
     }
 
     render() {
+        this.circle.diameter = map(this.score, 0, 200, 50, 300)
         this.circle.render()
         textAlign(CENTER)
         strokeWeight(0).textSize(12);
-        text(this._name + '\r\n' + this._score, this.circle.position.x, this.circle.position.y)
+        text(this._name + '\r\n' + this.score, this.circle.position.x, this.circle.position.y)
     }
 }
 
@@ -268,7 +277,7 @@ class Velocity {
     }
 
     static createRandomVelocity() {
-        return new Velocity(random(-.1, .1), random(-.1, .1))
+        return new Velocity(random(-.5, .5), random(-.5, .5))
     }
 
     clear() {
