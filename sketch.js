@@ -46,39 +46,39 @@ class System {
 
         players.push(new Player(new Circle(this._canvas, this._canvas.getRandomCoordinate()),
             'TFT',
-            new JenkinsJob('http://sparhawkbuild:8080/view/6.1%20Delivery%20Pipeline/job/6_1_cd_scoped_tft')))
+            new JenkinsJob('http://sparhawkbuild.kepdomain.local:8080/job/6_3_cd_scoped_tft')))
 
         players.push(new Player(new Circle(this._canvas, this._canvas.getRandomCoordinate()),
             'PHILO',
-            new JenkinsJob('http://sparhawkbuild:8080/view/6.1%20Delivery%20Pipeline/job/6_1_cd_scoped_philo')))
+            new JenkinsJob('http://sparhawkbuild.kepdomain.local:8080/job/6_3_cd_scoped_philo')))
 
         players.push(new Player(new Circle(this._canvas, this._canvas.getRandomCoordinate()),
             'TSN',
-            new JenkinsJob('http://sparhawkbuild:8080/view/6.1%20Delivery%20Pipeline/job/6_1_cd_scoped_tsn')))
+            new JenkinsJob('http://sparhawkbuild.kepdomain.local:8080/job/6_3_cd_scoped_tsn')))
 
         players.push(new Player(new Circle(this._canvas, this._canvas.getRandomCoordinate()),
             'SWFL',
-            new JenkinsJob('http://sparhawkbuild:8080/view/6.1%20Delivery%20Pipeline/job/6_1_cd_scoped_swfl')))
+            new JenkinsJob('http://sparhawkbuild.kepdomain.local:8080/job/6_3_cd_scoped_swfl')))
 
         players.push(new Player(new Circle(this._canvas, this._canvas.getRandomCoordinate()),
             'SPARHAWK',
-            new JenkinsJob('http://sparhawkbuild:8080/view/6.1%20Delivery%20Pipeline/job/6_1_cd_scoped_sparhawk')))
+            new JenkinsJob('http://sparhawkbuild.kepdomain.local:8080/job/6_3_cd_scoped_sparhawk')))
 
         players.push(new Player(new Circle(this._canvas, this._canvas.getRandomCoordinate()),
             'SF',
-            new JenkinsJob('http://sparhawkbuild:8080/view/6.1%20Delivery%20Pipeline/job/6_1_cd_scoped_sf')))
+            new JenkinsJob('http://sparhawkbuild.kepdomain.local:8080/job/6_3_cd_scoped_sf')))
 
         players.push(new Player(new Circle(this._canvas, this._canvas.getRandomCoordinate()),
             'INF',
-            new JenkinsJob('http://sparhawkbuild:8080/view/6.1%20Delivery%20Pipeline/job/6_1_cd_scoped_inf')))
+            new JenkinsJob('http://sparhawkbuild.kepdomain.local:8080/job/6_3_cd_scoped_inf')))
 
         players.push(new Player(new Circle(this._canvas, this._canvas.getRandomCoordinate()),
             'BP',
-            new JenkinsJob('http://sparhawkbuild:8080/view/6.1%20Delivery%20Pipeline/job/6_1_cd_scoped_bp')))
+            new JenkinsJob('http://sparhawkbuild.kepdomain.local:8080/job/6_3_cd_scoped_bp')))
 
         players.push(new Player(new Circle(this._canvas, this._canvas.getRandomCoordinate()),
             'ACME',
-            new JenkinsJob('http://sparhawkbuild:8080/view/6.1%20Delivery%20Pipeline/job/6_1_cd_scoped_acme')))
+            new JenkinsJob('http://sparhawkbuild.kepdomain.local:8080/job/6_3_cd_scoped_acme')))
 
         return players
     }
